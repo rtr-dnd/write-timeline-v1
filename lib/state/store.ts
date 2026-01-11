@@ -28,6 +28,9 @@ export interface Project {
 
 export interface AppState {
   projects: Record<string, Project>;
+  settings: {
+    useLocalApi: boolean;
+  };
 }
 
 const persistOptions = configureSynced({
@@ -40,6 +43,9 @@ const persistOptions = configureSynced({
 
 export const store$ = observable<AppState>({
   projects: {},
+  settings: {
+    useLocalApi: false,
+  },
 });
 
 syncObservable(
@@ -52,6 +58,9 @@ syncObservable(
 );
 
 export const actions = {
+  toggleApiMode: () => {
+    store$.settings.useLocalApi.set((prev) => !prev);
+  },
   addProject: (title: string) => {
     const id = uuidv4();
     const now = new Date().toISOString();

@@ -24,9 +24,10 @@
       "package": "com.rtrdnd.writetimelinev1"
     },
     "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      // "bundler": "metro",
+      // "output": "static",
+      // "favicon": "./assets/images/favicon.png"
+      "output": "server"
     },
     "plugins": [
       "expo-router",
