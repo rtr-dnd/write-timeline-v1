@@ -54,13 +54,19 @@ const ProjectDetailScreen = observer(() => {
 
   const content = useEditorContent(editor);
 
+  // Sync from Store to Editor (External updates)
   useEffect(() => {
-    if (content !== undefined && content !== project?.content) {
-      if (typeof content === "string") {
-        actions.updateProject(id, { content });
-      }
+    if (project?.lastUpdatedSource === 'external' && project.content !== content) {
+       editor.setContent(project.content);
     }
-  }, [content, id, project?.content]);
+  }, [project?.content, project?.lastUpdatedSource]);
+
+  // Sync from Editor to Store (User typing)
+  useEffect(() => {
+    if (content !== undefined && typeof content === "string" && content !== project?.content) {
+      actions.updateProject(id, { content }, 'editor');
+    }
+  }, [content, id]);
 
   const handleRenameOpen = () => {
     setRenameValue(project?.title || "");
@@ -93,6 +99,17 @@ const ProjectDetailScreen = observer(() => {
               <Text className="text-lg font-bold text-foreground">
                 {project.title}
               </Text>
+            </Pressable>
+          ),
+          headerRight: () => (
+            <Pressable 
+              onPress={() => {
+                const newContent = `<p>Updated from button at ${new Date().toLocaleTimeString()}</p>`;
+                actions.updateProject(id, { content: newContent }, 'external');
+              }}
+              className="mr-4"
+            >
+              <Text className="text-primary font-bold">Test</Text>
             </Pressable>
           ),
           headerBackTitle: "Projects",

@@ -6,7 +6,7 @@ import { BottomSheetScrollView, BottomSheetTextInput } from "@gorhom/bottom-shee
 import { observer } from "@legendapp/state/react";
 import { DefaultChatTransport } from "ai";
 import { fetch as expoFetch } from "expo/fetch";
-import { Check, ChevronLeft, Loader2, MessageSquarePlus, MessageSquare } from "lucide-react-native";
+import { Check, ChevronLeft, Loader2, MessageSquare, MessageSquarePlus, PenLine } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
 import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
@@ -25,7 +25,7 @@ const ChatInterface = observer(({
   const thread$ = store$.projects[projectId].threads[threadId];
   const thread = thread$.get();
 
-  const { messages, error, sendMessage } = useChat({
+  const { messages, error, sendMessage, addToolResult } = useChat({
     id: threadId,
     messages: thread?.messages || [],
     transport: new DefaultChatTransport({
@@ -35,6 +35,17 @@ const ChatInterface = observer(({
         projectContent: store$.projects[projectId].content.peek(),
       }),
     }),
+    onToolCall: async ({ toolCall }) => {
+      if (toolCall.toolName === 'updateProjectContent') {
+        const { content } = toolCall.input as { content: string };
+        actions.updateProject(projectId, { content }, 'external');
+        addToolResult({
+          toolCallId: toolCall.toolCallId,
+          tool: toolCall.toolName,
+          output: "Project content updated successfully.",
+        });
+      }
+    },
     onError: (error) => console.error(error, "ERROR"),
   });
 
@@ -88,6 +99,22 @@ const ChatInterface = observer(({
                         )}
                         <Text className="text-sm font-medium text-muted-foreground">
                            {part.state === 'output-available' ? 'Read content' : 'Reading content...'}
+                        </Text>
+                      </View>
+                    );
+                  case "tool-updateProjectContent":
+                    return (
+                      <View
+                        key={`${m.id}-${i}`}
+                        className="flex-row items-center gap-2 rounded-md bg-muted p-3 my-1"
+                      >
+                        {part.state === 'output-available' ? (
+                          <Check size={16} color={activeTheme.primary} />
+                        ) : (
+                          <PenLine size={16} className="animate-pulse" color={activeTheme.mutedForeground} />
+                        )}
+                        <Text className="text-sm font-medium text-muted-foreground">
+                           {part.state === 'output-available' ? 'Content updated' : 'Updating content...'}
                         </Text>
                       </View>
                     );

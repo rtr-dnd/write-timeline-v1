@@ -24,6 +24,18 @@ export async function POST(req: Request) {
           };
         },
       }),
+      updateProjectContent: tool({
+        description: 'Update the content of the project. Use this when the user asks to rewrite, edit, or change the project text.',
+        inputSchema: z.object({
+          content: z.string().describe('The new full content of the project.'),
+        }),
+        execute: async ({ content }) => {
+          return {
+            success: true,
+            message: "Content update request received",
+          };
+        },
+      }),
     },
   });
 

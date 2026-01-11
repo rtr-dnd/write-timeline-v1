@@ -21,6 +21,7 @@ export interface Project {
   notes: string;
   threads: Record<string, ChatThread>;
   activeThreadId: string | null;
+  lastUpdatedSource?: 'editor' | 'external';
   createdAt: string;
   updatedAt: string;
 }
@@ -61,6 +62,7 @@ export const actions = {
       notes: "",
       threads: {},
       activeThreadId: null,
+      lastUpdatedSource: 'editor',
       createdAt: now,
       updatedAt: now,
     });
@@ -68,12 +70,14 @@ export const actions = {
   },
   updateProject: (
     id: string,
-    data: Partial<Omit<Project, "id" | "createdAt">>
+    data: Partial<Omit<Project, "id" | "createdAt" | "lastUpdatedSource">>,
+    source: 'editor' | 'external' = 'editor'
   ) => {
     const project = store$.projects[id];
     if (project.peek()) {
       project.assign({
         ...data,
+        lastUpdatedSource: source,
         updatedAt: new Date().toISOString(),
       });
     }
