@@ -1,9 +1,9 @@
 import { THEME } from "@/lib/theme";
 import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
-import { Stack } from "expo-router";
 import { useColorScheme } from "nativewind";
 import { useCallback, useMemo, useRef } from "react";
 import { Keyboard, TextInput, View } from "react-native";
+import { TentapEditor } from "./TentapEditor";
 
 export default function ProjectScreen() {
   const { colorScheme } = useColorScheme();
@@ -24,14 +24,7 @@ export default function ProjectScreen() {
 
   return (
     <View className="flex-1 bg-background justify-center items-center">
-      <Stack.Screen options={{ title: "New Project" }} />
-      <TextInput
-        className="w-full flex-1 px-4 py-4 text-foreground"
-        placeholderTextColor={activeTheme.mutedForeground}
-        placeholder="Start your document here..."
-        multiline
-        textAlignVertical="top"
-      />
+      <TentapEditor />
       <BottomSheet
         backgroundStyle={{
           backgroundColor: activeTheme.muted,
