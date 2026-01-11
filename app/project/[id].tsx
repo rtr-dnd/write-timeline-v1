@@ -16,12 +16,12 @@ import {
   useEditorBridge,
   useEditorContent,
 } from "@10play/tentap-editor";
-import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
 import { observer } from "@legendapp/state/react";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useColorScheme } from "nativewind";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Keyboard, Pressable, Text, TextInput, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Pressable, Text, View } from "react-native";
+import ProjectBottomSheet from "./BottomSheet";
 import { TentapEditor } from "./TentapEditor";
 
 const ProjectDetailScreen = observer(() => {
@@ -61,19 +61,6 @@ const ProjectDetailScreen = observer(() => {
       }
     }
   }, [content, id, project?.content]);
-
-  const bottomSheetRef = useRef<BottomSheet>(null);
-  const bottomSheetTextInputRef = useRef<TextInput>(null);
-
-  const handleSheetChanges = useCallback((index: number) => {
-    if (index === 1) {
-      bottomSheetTextInputRef.current?.focus();
-    } else {
-      Keyboard.dismiss();
-    }
-  }, []);
-
-  const snapPoints = useMemo(() => ["15%", "100%"], []);
 
   const handleRenameOpen = () => {
     setRenameValue(project?.title || "");
@@ -150,33 +137,7 @@ const ProjectDetailScreen = observer(() => {
 
       <TentapEditor editor={editor} />
 
-      <BottomSheet
-        backgroundStyle={{
-          backgroundColor: activeTheme.muted,
-        }}
-        ref={bottomSheetRef}
-        onChange={handleSheetChanges}
-        snapPoints={snapPoints}
-        enableHandlePanningGesture
-        enableContentPanningGesture
-      >
-        <BottomSheetView className="flex-1 p-2">
-          <View className="flex-1">
-            <TextInput
-              ref={bottomSheetTextInputRef}
-              className="w-full flex-1 px-4 py-4 text-foreground"
-              placeholderTextColor={activeTheme.mutedForeground}
-              placeholder="Notes here..."
-              multiline
-              textAlignVertical="top"
-              value={project.notes}
-              onChangeText={(text) =>
-                actions.updateProject(id, { notes: text })
-              }
-            />
-          </View>
-        </BottomSheetView>
-      </BottomSheet>
+      <ProjectBottomSheet id={id} notes={project.notes} />
     </View>
   );
 });
