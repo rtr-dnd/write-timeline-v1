@@ -1,8 +1,25 @@
+import { actions } from "@/lib/state/store";
 import { THEME } from "@/lib/theme";
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Link, Tabs } from "expo-router";
+import { observer } from "@legendapp/state/react";
+import { Tabs } from "expo-router";
 import { useColorScheme } from "nativewind";
 import { Pressable } from "react-native";
+
+const CreateProjectButton = observer(() => {  
+    const { colorScheme } = useColorScheme();
+    const activeTheme = THEME[colorScheme === 'dark' ? 'dark' : 'light'];
+
+  const handleCreateProject = () => {
+    actions.addProject(`Project ${new Date().toLocaleTimeString()}`);
+  };
+
+  return (
+    <Pressable onPress={handleCreateProject} className="mr-4 active:opacity-50">
+        <Ionicons name="add" size={24} color={activeTheme.foreground} />
+    </Pressable>
+  )
+})
 
 export default function TabLayout() {
     const { colorScheme } = useColorScheme();
@@ -17,11 +34,7 @@ export default function TabLayout() {
             <Tabs.Screen name="index" options={{
                 title: "Projects",
                 headerRight: () => (
-                    <Link href="/project" asChild>
-                        <Pressable className="mr-4 active:opacity-50">
-                            <Ionicons name="add" size={24} color={activeTheme.foreground} />
-                        </Pressable>
-                    </Link>
+                    <CreateProjectButton />
                 ),
                 tabBarIcon: ({ color, focused }) => (
                     <Ionicons name={focused ? "folder-sharp" : "folder-outline"} color={color} size={24} />
