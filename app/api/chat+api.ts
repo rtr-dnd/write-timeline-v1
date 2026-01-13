@@ -22,9 +22,15 @@ export async function POST(req: Request) {
       });
     }
 
+    // Manual mapping that was confirmed working with curl
+    const coreMessages = messages.map((m) => ({
+      role: m.role as 'user' | 'assistant' | 'system',
+      content: m.content,
+    }));
+
     const result = streamText({
       model: "openai/gpt-5.2-chat",
-      messages: await convertToModelMessages(messages),
+      messages: coreMessages,
       stopWhen: stepCountIs(5),
       tools: {
         readProjectContent: tool({
