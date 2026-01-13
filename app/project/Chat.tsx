@@ -6,23 +6,16 @@ import { BottomSheetScrollView, BottomSheetTextInput } from "@gorhom/bottom-shee
 import { observer } from "@legendapp/state/react";
 import { DefaultChatTransport } from "ai";
 import { fetch as expoFetch } from "expo/fetch";
-import { Check, ChevronLeft, Loader2, MessageSquare, MessageSquarePlus, PenLine } from "lucide-react-native";
+import { ChevronLeft, MessageSquare, MessageSquarePlus, Check, Loader2, PenLine } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
-// Debug: Check polyfills
-console.log("Polyfills check:", { 
-  TextDecoder: !!global.TextDecoder, 
-  ReadableStream: !!global.ReadableStream,
-  ExpoFetch: !!expoFetch
-});
-
 const ChatInterface = observer(({ 
-  projectId, 
-  threadId 
-}: { 
-  projectId: string; 
+  projectId,
+  threadId
+}: {
+  projectId: string;
   threadId: string;
 }) => {
   const [input, setInput] = useState("");
@@ -55,51 +48,10 @@ const ChatInterface = observer(({
       }
     },
     onFinish: (message) => {
-        console.log("Stream finished:", message);
         actions.updateThreadMessages(projectId, threadId, messages);
     },
     onError: (error) => console.error(error, "ERROR"),
   });
-
-  const lastUpdateRef = useRef(Date.now());
-  const [displayMessages, setDisplayMessages] = useState(messages);
-  const throttleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const messagesRef = useRef(messages);
-  messagesRef.current = messages;
-
-  // Throttle UI updates to 100ms
-  useEffect(() => {
-    if (!throttleTimerRef.current) {
-      throttleTimerRef.current = setTimeout(() => {
-        setDisplayMessages(messagesRef.current);
-        throttleTimerRef.current = null;
-      }, 100);
-    }
-    
-    // Debug logging
-    if (messages.length > 0) {
-      const now = Date.now();
-      const diff = now - lastUpdateRef.current;
-      lastUpdateRef.current = now;
-
-      const lastMsg = messages[messages.length - 1];
-      if (lastMsg.role === 'assistant') {
-        const parts = lastMsg.parts || [];
-        const lastPart = parts[parts.length - 1];
-        let preview = "";
-        if (lastPart?.type === 'text') preview = lastPart.text;
-        else if (lastPart?.type === 'reasoning') preview = lastPart.text;
-
-        console.log(`Interval: ${diff}ms, Parts: ${parts.length}, Last type: ${lastPart?.type}, Text: "${preview}"`);
-      }
-    }
-  }, [messages, projectId, threadId]);
-
-  useEffect(() => {
-    return () => {
-      if (throttleTimerRef.current) clearTimeout(throttleTimerRef.current);
-    };
-  }, []);
 
   if (error) return <Text className="p-4 text-destructive">{error.message}</Text>;
 
@@ -118,7 +70,7 @@ const ChatInterface = observer(({
       </View>
 
       <BottomSheetScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
-        {displayMessages.map((m) => (
+        {messages.map((m) => (
           <View key={m.id} style={{ marginVertical: 8 }}>
             <View>
               <Text className="text-foreground mb-1" style={{ fontWeight: 700 }}>
@@ -194,7 +146,6 @@ const ChatInterface = observer(({
     </View>
   );
 });
-
 const ThreadList = observer(({ projectId }: { projectId: string }) => {
   const project$ = store$.projects[projectId];
   const threads = project$.threads.get();
