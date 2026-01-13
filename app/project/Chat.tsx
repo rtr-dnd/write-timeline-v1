@@ -11,6 +11,13 @@ import { useColorScheme } from "nativewind";
 import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
+// Debug: Check polyfills
+console.log("Polyfills check:", { 
+  TextDecoder: !!global.TextDecoder, 
+  ReadableStream: !!global.ReadableStream,
+  ExpoFetch: !!expoFetch
+});
+
 const ChatInterface = observer(({ 
   projectId, 
   threadId 
@@ -48,11 +55,22 @@ const ChatInterface = observer(({
         });
       }
     },
+    onFinish: (message) => console.log("Stream finished:", message),
     onError: (error) => console.error(error, "ERROR"),
   });
 
+  // Debug: Log streaming progress
   useEffect(() => {
     if (messages.length > 0) {
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg.role === 'assistant') {
+        const content = lastMsg.content || "";
+        // Log last 20 chars to identify streaming vs bulk update
+        console.log(`Msg update (${content.length} chars): ...${content.slice(-20)}`);
+        if (!lastMsg.content) {
+            console.log("Empty content message:", JSON.stringify(lastMsg, null, 2));
+        }
+      }
       actions.updateThreadMessages(projectId, threadId, messages);
     }
   }, [messages, projectId, threadId]);

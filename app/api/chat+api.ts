@@ -22,15 +22,9 @@ export async function POST(req: Request) {
       });
     }
 
-    // Manual mapping that was confirmed working with curl
-    const coreMessages = messages.map((m) => ({
-      role: m.role as 'user' | 'assistant' | 'system',
-      content: m.content,
-    }));
-
     const result = streamText({
       model: "openai/gpt-5.2-chat",
-      messages: coreMessages,
+      messages: await convertToModelMessages([...messages]),
       stopWhen: stepCountIs(5),
       tools: {
         readProjectContent: tool({
@@ -69,7 +63,7 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     console.error('API Error:', error);
-    return new Response(JSON.stringify({ error: 'Internal Server Error', details: error.message }), { 
+    return new Response(JSON.stringify({ error: 'Internal Server Error', details: (error as Error).message }), { 
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });
