@@ -38,6 +38,8 @@ const ChatInterface = observer(({
     onToolCall: async ({ toolCall }) => {
       if (toolCall.toolName === 'updateProjectContent') {
         const { content } = toolCall.input as { content: string };
+        // Create a safety snapshot before AI updates content
+        actions.createSnapshot(projectId, 'ai_backup');
         actions.updateProject(projectId, { content }, 'external');
         addToolResult({
           toolCallId: toolCall.toolCallId,

@@ -17,7 +17,8 @@ import {
   useEditorContent,
 } from "@10play/tentap-editor";
 import { observer } from "@legendapp/state/react";
-import { Stack, useLocalSearchParams } from "expo-router";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { History } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
 import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
@@ -26,6 +27,7 @@ import { TentapEditor } from "./TentapEditor";
 
 const ProjectDetailScreen = observer(() => {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
   const project$ = store$.projects[id];
   const project = project$.get();
 
@@ -68,6 +70,15 @@ const ProjectDetailScreen = observer(() => {
     }
   }, [content, id]);
 
+  // Session End Snapshot
+  useEffect(() => {
+    return () => {
+      if (project?.content) {
+         actions.createSnapshot(id, 'session_end');
+      }
+    };
+  }, [id]);
+
   const handleRenameOpen = () => {
     setRenameValue(project?.title || "");
     setIsRenameDialogOpen(true);
@@ -102,15 +113,14 @@ const ProjectDetailScreen = observer(() => {
             </Pressable>
           ),
           headerRight: () => (
-            <Pressable 
-              onPress={() => {
-                const newContent = `<p>Updated from button at ${new Date().toLocaleTimeString()}</p>`;
-                actions.updateProject(id, { content: newContent }, 'external');
-              }}
-              className="mr-4"
-            >
-              <Text className="text-primary font-bold">Test</Text>
-            </Pressable>
+            <View className="flex-row items-center gap-4">
+              <Pressable
+                onPress={() => router.push(`/project/${id}/history`)}
+                className="p-1"
+              >
+                <History size={24} color={activeTheme.primary} />
+              </Pressable>
+            </View>
           ),
           headerBackTitle: "Projects",
           headerStyle: {

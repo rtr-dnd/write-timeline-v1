@@ -14,12 +14,21 @@ export interface ChatThread {
   updatedAt: string;
 }
 
+export interface ProjectVersion {
+  id: string;
+  createdAt: string;
+  content: string;
+  reason: 'manual' | 'ai_backup' | 'auto_save' | 'session_end';
+}
+
 export interface Project {
   id: string;
   title: string;
   content: string;
   notes: string;
   threads: Record<string, ChatThread>;
+  history: ProjectVersion[];
+  lastSnapshotAt: string;
   activeThreadId: string | null;
   lastUpdatedSource?: 'editor' | 'external';
   createdAt: string;
@@ -44,7 +53,7 @@ const persistOptions = configureSynced({
 export const store$ = observable<AppState>({
   projects: {},
   settings: {
-    useLocalApi: false,
+    apiMode: 'production',
   },
 });
 
@@ -58,8 +67,8 @@ syncObservable(
 );
 
 export const actions = {
-  toggleApiMode: () => {
-    store$.settings.useLocalApi.set((prev) => !prev);
+  setApiMode: (mode: ApiMode) => {
+    store$.settings.apiMode.set(mode);
   },
   addProject: (title: string) => {
     const id = uuidv4();
@@ -70,6 +79,8 @@ export const actions = {
       content: "",
       notes: "",
       threads: {},
+      history: [],
+      lastSnapshotAt: now,
       activeThreadId: null,
       lastUpdatedSource: 'editor',
       createdAt: now,
@@ -77,13 +88,56 @@ export const actions = {
     });
     return id;
   },
+  createSnapshot: (
+    projectId: string,
+    reason: 'manual' | 'ai_backup' | 'auto_save' | 'session_end'
+  ) => {
+    const project = store$.projects[projectId];
+    const currentContent = project.content.peek();
+    const history = project.history.peek() || [];
+
+    // Avoid duplicate snapshots if content hasn't changed from the *very last* snapshot
+    // (Optional check, but good for safety. However, for 'ai_backup' we might want to force it)
+    if (history.length > 0 && history[0].content === currentContent) {
+       return;
+    }
+
+    const newVersion: ProjectVersion = {
+      id: uuidv4(),
+      createdAt: new Date().toISOString(),
+      content: currentContent,
+      reason,
+    };
+
+    // Add new version to the beginning, keep max 50
+    const newHistory = [newVersion, ...history].slice(0, 50);
+    
+    project.assign({
+      history: newHistory,
+      lastSnapshotAt: newVersion.createdAt,
+    });
+  },
   updateProject: (
     id: string,
     data: Partial<Omit<Project, "id" | "createdAt" | "lastUpdatedSource">>,
     source: 'editor' | 'external' = 'editor'
   ) => {
     const project = store$.projects[id];
-    if (project.peek()) {
+    const p = project.peek();
+    
+    if (p) {
+      // Auto-save logic: Check if 10 minutes have passed since last snapshot
+      // Only trigger if we are updating content
+      if (data.content && data.content !== p.content) {
+        const lastSnapshotTime = new Date(p.lastSnapshotAt || p.createdAt).getTime();
+        const nowTime = new Date().getTime();
+        const tenMinutes = 10 * 60 * 1000;
+
+        if (nowTime - lastSnapshotTime > tenMinutes) {
+          actions.createSnapshot(id, 'auto_save');
+        }
+      }
+
       project.assign({
         ...data,
         lastUpdatedSource: source,

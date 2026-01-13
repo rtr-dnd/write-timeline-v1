@@ -43,7 +43,9 @@ export async function POST(req: Request) {
     headers: {
       'Content-Type': 'application/octet-stream',
       'Content-Encoding': 'none',
-      'X-Content-Type-Options': 'nosniff'
+      'X-Content-Type-Options': 'nosniff',
+      'Transfer-Encoding': 'chunked',
+      Connection: 'keep-alive',
     },
   });
 }
