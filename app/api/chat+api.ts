@@ -1,9 +1,9 @@
 import {
-    convertToModelMessages,
-    stepCountIs,
-    streamText,
-    tool,
-    UIMessage,
+  convertToModelMessages,
+  stepCountIs,
+  streamText,
+  tool,
+  UIMessage,
 } from 'ai';
 import { z } from 'zod';
 
@@ -43,6 +43,7 @@ export async function POST(req: Request) {
     headers: {
       'Content-Type': 'application/octet-stream',
       'Content-Encoding': 'none',
+      'X-Content-Type-Options': 'nosniff'
     },
   });
 }
