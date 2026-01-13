@@ -12,6 +12,10 @@
   },
   "rewrites": [
     {
+      "source": "/api/chat",
+      "destination": "/api/chat"
+    },
+    {
       "source": "/api/stream-test",
       "destination": "/api/stream-test"
     },
