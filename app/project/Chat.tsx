@@ -8,7 +8,7 @@ import { DefaultChatTransport } from "ai";
 import { fetch as expoFetch } from "expo/fetch";
 import { Check, ChevronLeft, Loader2, MessageSquare, MessageSquarePlus, PenLine } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
 // Debug: Check polyfills
@@ -45,7 +45,6 @@ const ChatInterface = observer(({
     onToolCall: async ({ toolCall }) => {
       if (toolCall.toolName === 'updateProjectContent') {
         const { content } = toolCall.input as { content: string };
-        // Create a safety snapshot before AI updates content
         actions.createSnapshot(projectId, 'ai_backup');
         actions.updateProject(projectId, { content }, 'external');
         addToolResult({
@@ -55,25 +54,52 @@ const ChatInterface = observer(({
         });
       }
     },
-    onFinish: (message) => console.log("Stream finished:", message),
+    onFinish: (message) => {
+        console.log("Stream finished:", message);
+        actions.updateThreadMessages(projectId, threadId, messages);
+    },
     onError: (error) => console.error(error, "ERROR"),
   });
 
-  // Debug: Log streaming progress
+  const lastUpdateRef = useRef(Date.now());
+  const [displayMessages, setDisplayMessages] = useState(messages);
+  const throttleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
+
+  // Throttle UI updates to 100ms
   useEffect(() => {
+    if (!throttleTimerRef.current) {
+      throttleTimerRef.current = setTimeout(() => {
+        setDisplayMessages(messagesRef.current);
+        throttleTimerRef.current = null;
+      }, 100);
+    }
+    
+    // Debug logging
     if (messages.length > 0) {
+      const now = Date.now();
+      const diff = now - lastUpdateRef.current;
+      lastUpdateRef.current = now;
+
       const lastMsg = messages[messages.length - 1];
       if (lastMsg.role === 'assistant') {
-        const content = lastMsg.content || "";
-        // Log last 20 chars to identify streaming vs bulk update
-        console.log(`Msg update (${content.length} chars): ...${content.slice(-20)}`);
-        if (!lastMsg.content) {
-            console.log("Empty content message:", JSON.stringify(lastMsg, null, 2));
-        }
+        const parts = lastMsg.parts || [];
+        const lastPart = parts[parts.length - 1];
+        let preview = "";
+        if (lastPart?.type === 'text') preview = lastPart.text;
+        else if (lastPart?.type === 'reasoning') preview = lastPart.text;
+
+        console.log(`Interval: ${diff}ms, Parts: ${parts.length}, Last type: ${lastPart?.type}, Text: "${preview}"`);
       }
-      actions.updateThreadMessages(projectId, threadId, messages);
     }
   }, [messages, projectId, threadId]);
+
+  useEffect(() => {
+    return () => {
+      if (throttleTimerRef.current) clearTimeout(throttleTimerRef.current);
+    };
+  }, []);
 
   if (error) return <Text className="p-4 text-destructive">{error.message}</Text>;
 
@@ -92,7 +118,7 @@ const ChatInterface = observer(({
       </View>
 
       <BottomSheetScrollView contentContainerStyle={{ padding: 16, paddingBottom: 32 }}>
-        {messages.map((m) => (
+        {displayMessages.map((m) => (
           <View key={m.id} style={{ marginVertical: 8 }}>
             <View>
               <Text className="text-foreground mb-1" style={{ fontWeight: 700 }}>
@@ -105,6 +131,13 @@ const ChatInterface = observer(({
                       <Text className="text-foreground leading-6" key={`${m.id}-${i}`}>
                         {part.text}
                       </Text>
+                    );
+                  case "reasoning":
+                    return (
+                      <View key={`${m.id}-${i}`} className="mb-2 pl-2 border-l-2 border-muted">
+                         <Text className="text-xs text-muted-foreground italic">Thinking...</Text>
+                         {part.text && <Text className="text-xs text-muted-foreground">{part.text}</Text>}
+                      </View>
                     );
                   case "tool-readProjectContent":
                     return (

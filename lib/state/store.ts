@@ -35,10 +35,12 @@ export interface Project {
   updatedAt: string;
 }
 
+export type ApiMode = 'production' | 'local_expo' | 'local_vercel';
+
 export interface AppState {
   projects: Record<string, Project>;
   settings: {
-    useLocalApi: boolean;
+    apiMode: ApiMode;
   };
 }
 

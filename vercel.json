@@ -5,9 +5,16 @@
     "api/index.ts": {
       "runtime": "@vercel/node@5.1.8",
       "includeFiles": "dist/server/**"
+    },
+    "api/stream-test.ts": {
+      "runtime": "@vercel/node"
     }
   },
   "rewrites": [
+    {
+      "source": "/api/stream-test",
+      "destination": "/api/stream-test"
+    },
     {
       "source": "/(.*)",
       "destination": "/api/index"
